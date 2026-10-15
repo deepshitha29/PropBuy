@@ -5,8 +5,10 @@ COPY backend/src backend/src
 COPY frontend frontend
 WORKDIR /app/backend
 RUN mvn -q -DskipTests package
+
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+COPY --from=build /app/backend/target/propbuy-0.1.0.jar app.jar
 EXPOSE 8080 8081 10000
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseSerialGC"
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
