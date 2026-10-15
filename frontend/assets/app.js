@@ -32,7 +32,15 @@ async function api(url, options = {}) {
   }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = payload.message || payload.error || 'The request could not be completed.';
+    let message = payload.message || payload.error;
+    if (!message) {
+      const base = getApiBase();
+      if (!base && (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost')) {
+        message = 'Backend not connected yet. Click "API Settings" in the footer to enter your Render backend URL.';
+      } else {
+        message = 'The request could not be completed.';
+      }
+    }
     throw new Error(message);
   }
   return payload;
