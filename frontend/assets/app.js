@@ -652,10 +652,13 @@ if ($('#configApiBtn') && apiDialog) {
       const res = await fetch(`${candidate}/api/health`);
       if (res.ok) {
         const body = await res.json().catch(() => ({}));
+        localStorage.setItem('PROPBUY_API_BASE', candidate);
+        window.PROPBUY_API_BASE = candidate;
         if (apiStatus) {
-          apiStatus.textContent = `✅ Connected successfully! (status: ${body.status || 'UP'})`;
+          apiStatus.textContent = `✅ Connected & saved! You can now log in.`;
           apiStatus.style.color = '#457b29';
         }
+        toast('Backend URL saved successfully!');
       } else {
         if (apiStatus) {
           apiStatus.textContent = `⚠️ Connected but server returned status ${res.status}`;
