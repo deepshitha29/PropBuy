@@ -124,12 +124,12 @@
     <section id="how" class="dark" data-route="how"><p class="eyebrow">The PropBuy difference</p><h2>Clear at every step.</h2><div class="steps"><div><i>01</i><h3>Tell us what you need</h3><p>Search naturally or browse curated homes that match your life.</p></div><div><i>02</i><h3>See the real picture</h3><p>Transparent details and indicative valuations, without the noise.</p></div><div><i>03</i><h3>Move with confidence</h3><p>From first enquiry to keys in hand, we stay in your corner.</p></div></div></section>
   </main>
 
-  <footer><span class="brand">prop<span>buy</span></span><span>Homes, thoughtfully found.</span></footer>
+  <footer><span class="brand">prop<span>buy</span></span><span>Homes, thoughtfully found.</span><button id="configApiBtn" class="link-button" type="button" style="font-size:12px;opacity:0.75;cursor:pointer;">⚙ API Settings</button></footer>
   <div id="toast" role="status" aria-live="polite"></div>
 
   <dialog id="visitDialog">
     <form id="visitForm" method="dialog" class="auth-form">
-      <button class="dialog-close" type="button" id="closeVisit" aria-label="Close">Ã—</button>
+      <button class="dialog-close" type="button" id="closeVisit" aria-label="Close">×</button>
       <p class="eyebrow">Plan a viewing</p><h2>Request a property visit</h2>
       <p id="visitPropertyName" class="meta"></p>
       <label>Date and time<input id="visitDate" type="datetime-local" required></label>
@@ -159,8 +159,26 @@
       <button id="authSwitch" class="link-button" type="button">Create an account</button>
     </form>
   </dialog>
-  <!-- Set this to http://localhost:8081 when serving frontend/ independently. -->
-  <script>window.PROPBUY_API_BASE = '';</script>
+  <dialog id="apiConfigDialog">
+    <form id="apiConfigForm" method="dialog" class="auth-form">
+      <button class="dialog-close" type="button" id="closeApiConfig" aria-label="Close">×</button>
+      <p class="eyebrow">Connection</p>
+      <h2>Backend API</h2>
+      <p class="meta" style="margin-top:-6px;">Configure your Render backend URL when frontend is deployed on Vercel.</p>
+      <label>Backend URL<input id="apiBaseInput" type="url" placeholder="https://propbuy-backend.onrender.com"></label>
+      <p id="apiConfigStatus" class="meta" style="min-height:18px;font-size:12px;margin:0;"></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button id="saveApiBtn" type="button">Save URL</button>
+        <button id="testApiBtn" class="ghost" type="button">Test connection</button>
+        <button id="resetApiBtn" class="ghost" type="button">Use Same Origin</button>
+      </div>
+    </form>
+  </dialog>
+  <script>
+    // PropBuy API Configuration:
+    // When served separately (e.g. on Vercel), it reads from window.PROPBUY_API_BASE or localStorage.
+    window.PROPBUY_API_BASE = window.PROPBUY_API_BASE || localStorage.getItem('PROPBUY_API_BASE') || '';
+  </script>
   <script src="/assets/app.js"></script>
 </body>
 </html>

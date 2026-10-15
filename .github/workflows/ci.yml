@@ -27,6 +27,10 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
+      - name: Make Maven wrapper executable
+        working-directory: backend
+        run: chmod +x mvnw
+
       - name: Build and run tests
         working-directory: backend
-        run: mvn --batch-mode --no-transfer-progress verify
+        run: ./mvnw --batch-mode --no-transfer-progress verify

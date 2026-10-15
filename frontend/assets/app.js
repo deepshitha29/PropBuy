@@ -1,6 +1,11 @@
 const $ = (selector) => document.querySelector(selector);
-const API_BASE = (window.PROPBUY_API_BASE || '').replace(/\/$/, '');
-const apiUrl = (path) => `${API_BASE}${path}`;
+function getApiBase() {
+  const direct = (window.PROPBUY_API_BASE || '').trim().replace(/\/$/, '');
+  if (direct) return direct;
+  const stored = (localStorage.getItem('PROPBUY_API_BASE') || '').trim().replace(/\/$/, '');
+  return stored;
+}
+const apiUrl = (path) => `${getApiBase()}${path}`;
 const state = { page: 0, size: 6, query: '', city: '', bedrooms: '', maxPrice: '', sort: 'publishedAt', direction: 'desc', view: 'list', compare: [] };
 function toast(message) {
   const element = $('#toast');
@@ -13,7 +18,18 @@ async function api(url, options = {}) {
   const headers = { ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) };
   const token = sessionStorage.getItem('propbuy_token');
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(apiUrl(url), { ...options, headers });
+  let response;
+  try {
+    response = await fetch(apiUrl(url), { ...options, headers });
+  } catch (err) {
+    const base = getApiBase();
+    if (!base && window.location.hostname.includes('vercel.app')) {
+      toast('Backend URL not configured. Click "API Settings" in the footer to enter your Render backend URL.');
+    } else {
+      toast('Network error: unable to reach the backend. If Render was inactive, it may take ~30s to wake up.');
+    }
+    throw new Error('Could not connect to the backend server. Please check your network or Render backend status.');
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = payload.message || payload.error || 'The request could not be completed.';
@@ -573,6 +589,79 @@ $('#authForm').addEventListener('submit', async (event) => {
     $('#authSubmit').disabled = false;
   }
 });
+
+const apiDialog = $('#apiConfigDialog');
+const apiInput = $('#apiBaseInput');
+const apiStatus = $('#apiConfigStatus');
+if ($('#configApiBtn') && apiDialog) {
+  $('#configApiBtn').addEventListener('click', () => {
+    if (apiInput) apiInput.value = getApiBase();
+    if (apiStatus) {
+      apiStatus.textContent = '';
+      apiStatus.style.color = '';
+    }
+    apiDialog.showModal();
+  });
+  $('#closeApiConfig')?.addEventListener('click', () => apiDialog.close());
+  $('#saveApiBtn')?.addEventListener('click', () => {
+    const val = (apiInput?.value || '').trim().replace(/\/$/, '');
+    if (val) {
+      localStorage.setItem('PROPBUY_API_BASE', val);
+      window.PROPBUY_API_BASE = val;
+      toast('Backend URL updated and saved.');
+    } else {
+      localStorage.removeItem('PROPBUY_API_BASE');
+      window.PROPBUY_API_BASE = '';
+      toast('Reset to default same-origin API.');
+    }
+    apiDialog.close();
+    if (sessionStorage.getItem('propbuy_token')) loadListings();
+  });
+  $('#resetApiBtn')?.addEventListener('click', () => {
+    localStorage.removeItem('PROPBUY_API_BASE');
+    window.PROPBUY_API_BASE = '';
+    if (apiInput) apiInput.value = '';
+    if (apiStatus) {
+      apiStatus.textContent = 'Reset to same-origin (/api).';
+      apiStatus.style.color = '';
+    }
+    toast('API URL reset.');
+  });
+  $('#testApiBtn')?.addEventListener('click', async () => {
+    const candidate = (apiInput?.value || '').trim().replace(/\/$/, '');
+    if (!candidate) {
+      if (apiStatus) {
+        apiStatus.textContent = 'Please enter a URL to test (e.g. https://your-app.onrender.com).';
+        apiStatus.style.color = '#a43c2e';
+      }
+      return;
+    }
+    if (apiStatus) {
+      apiStatus.textContent = 'Testing connection... (may take ~30s if Render is waking up)';
+      apiStatus.style.color = 'var(--muted)';
+    }
+    try {
+      const res = await fetch(`${candidate}/api/health`);
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (apiStatus) {
+          apiStatus.textContent = `✅ Connected successfully! (status: ${body.status || 'UP'})`;
+          apiStatus.style.color = '#457b29';
+        }
+      } else {
+        if (apiStatus) {
+          apiStatus.textContent = `⚠️ Connected but server returned status ${res.status}`;
+          apiStatus.style.color = '#a43c2e';
+        }
+      }
+    } catch (e) {
+      if (apiStatus) {
+        apiStatus.textContent = '❌ Failed to reach backend. Check the URL and CORS settings.';
+        apiStatus.style.color = '#a43c2e';
+      }
+    }
+  });
+}
 
 window.addEventListener('hashchange', applyRoute);
 updateAuthUI();
